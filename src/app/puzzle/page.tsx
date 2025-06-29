@@ -73,13 +73,12 @@ export default function PuzzlePage() {
               <CardContent className="h-full flex gap-6">
                 {/* Chess Board */}
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full max-w-md h-96 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                    <div className="text-center">
-                      <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 font-medium">Chess Board Component</p>
-                      <p className="text-sm text-gray-400">Interactive chess board will be displayed here</p>
-                    </div>
-                  </div>
+                  <iframe 
+                    src="https://lichess.org/embed/analysis?fen=r1bqkb1r/pp2pppp/2np1n2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R_b_KQkq_-_1_6&color=black" 
+                    style={{ width: '100%', aspectRatio: '4/3' }} 
+                    frameBorder="0"
+                    className="rounded-lg shadow-lg"
+                  />
                 </div>
 
                 {/* Move History - Compact Column */}
