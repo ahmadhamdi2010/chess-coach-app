@@ -80,20 +80,6 @@ export default function PuzzlePage() {
                     className="rounded-lg shadow-lg"
                   />
                 </div>
-
-                {/* Move History - Compact Column */}
-                <div className="w-64 flex flex-col">
-                  <div className="mb-3">
-                    <h3 className="text-sm font-medium text-gray-900">Move History</h3>
-                    <p className="text-xs text-gray-500">Previous moves in this puzzle</p>
-                  </div>
-                  <div className="flex-1 bg-gray-50 rounded-lg border border-dashed border-gray-300 flex items-center justify-center">
-                    <div className="text-center p-4">
-                      <p className="text-gray-500 font-medium text-sm">Move History</p>
-                      <p className="text-xs text-gray-400">Previous moves will be listed here</p>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>
