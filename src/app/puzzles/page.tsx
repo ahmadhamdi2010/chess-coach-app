@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, Clock, Trophy } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Target, Clock, Trophy, Play } from 'lucide-react'
+import Link from 'next/link'
 
 export default function PuzzlesPage() {
   const { user, loading } = useAuth()
@@ -49,9 +51,15 @@ export default function PuzzlesPage() {
               <CardDescription>Today's featured puzzle</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="h-48 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                 <p className="text-gray-500">Puzzle board will be displayed here</p>
               </div>
+              <Link href="/puzzle">
+                <Button className="w-full">
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Puzzle
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
