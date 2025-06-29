@@ -57,7 +57,7 @@ export default function PuzzlesPage() {
               <Link href="/puzzle">
                 <Button className="w-full">
                   <Play className="h-4 w-4 mr-2" />
-                  Start Puzzle
+                  Start Training
                 </Button>
               </Link>
             </CardContent>
@@ -110,6 +110,44 @@ export default function PuzzlesPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Puzzle List Table */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold mb-4">Available Puzzles</h2>
+          <div className="overflow-x-auto rounded-lg shadow border bg-white">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Puzzle #</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rating</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Side</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {/* Mock data */}
+                {[
+                  { number: 201, rating: 1200, side: 'White', category: 'Fork' },
+                  { number: 202, rating: 1350, side: 'Black', category: 'Pin' },
+                  { number: 203, rating: 1500, side: 'White', category: 'Discovered Attack' },
+                  { number: 204, rating: 1600, side: 'Black', category: 'Back Rank' },
+                  { number: 205, rating: 1700, side: 'White', category: 'Skewer' },
+                ].map((puzzle) => (
+                  <tr key={puzzle.number}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">#{puzzle.number}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{puzzle.rating}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{puzzle.side}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">
+                        {puzzle.category}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
