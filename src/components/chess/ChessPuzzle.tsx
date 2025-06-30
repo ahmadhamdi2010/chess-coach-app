@@ -56,6 +56,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
   const [inferredUserSide, setInferredUserSide] = useState<'white' | 'black'>('white')
   const [lastMoveSquares, setLastMoveSquares] = useState<{ from: string, to: string } | null>(null)
   const [checkedKingSquare, setCheckedKingSquare] = useState<string | null>(null)
+  const [attemptedPuzzles, setAttemptedPuzzles] = useState<{ id: string, solved: boolean }[]>([])
+  // Track if a wrong move was made for the current puzzle
+  const [currentPuzzleWrongMove, setCurrentPuzzleWrongMove] = useState(false)
 
   // Fetch a random puzzle from Lichess API
   const fetchRandomPuzzle = useCallback(async (retryCount = 0) => {
@@ -329,6 +332,22 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
     return null;
   };
 
+  // Update attemptedPuzzles on puzzle completion
+  const handlePuzzleComplete = useCallback((puzzleId: string, success: boolean) => {
+    setAttemptedPuzzles(prev => {
+      if (prev.some(p => p.id === puzzleId)) return prev;
+      // Mark as solved only if no wrong move was made
+      const solved = success && !currentPuzzleWrongMove;
+      return [...prev, { id: puzzleId, solved }];
+    });
+    if (onPuzzleComplete) onPuzzleComplete(puzzleId, success);
+  }, [onPuzzleComplete, currentPuzzleWrongMove]);
+
+  // Reset wrong move tracker on puzzle load
+  useEffect(() => {
+    setCurrentPuzzleWrongMove(false);
+  }, [currentPuzzleIndex]);
+
   // Update lastMoveSquares and checkedKingSquare after every move in onDrop
   const onDrop = useCallback((sourceSquare: string, targetSquare: string) => {
     if (isPuzzleComplete) return false
@@ -362,7 +381,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       setGame(new Chess(game.fen()))
       if (newSolutionIdx >= currentPuzzle.moves.length) {
         setIsPuzzleComplete(true)
-        onPuzzleComplete?.(currentPuzzle.id, true)
+        handlePuzzleComplete(currentPuzzle.id, true)
       }
       onMoveComplete?.(currentPuzzle.id, game.fen(), [...moveHistory, moveString])
       return true
@@ -371,9 +390,10 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       setWrongMoves(prev => [...prev, moveString])
       setGame(new Chess(game.fen()))
       setCheckedKingSquare(getCheckedKingSquare(game));
+      setCurrentPuzzleWrongMove(true);
       return false
     }
-  }, [game, puzzles, currentPuzzleIndex, solutionIndex, moveHistory, isPuzzleComplete, onMoveComplete, onPuzzleComplete, inferredUserSide])
+  }, [game, puzzles, currentPuzzleIndex, solutionIndex, moveHistory, isPuzzleComplete, onMoveComplete, handlePuzzleComplete, inferredUserSide])
 
   // Also set checkedKingSquare on puzzle load
   useEffect(() => {
@@ -382,6 +402,11 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
 
   // Navigation functions
   const nextPuzzle = async () => {
+    // If not already attempted, mark as failed if not solved
+    const currentPuzzle = puzzles[currentPuzzleIndex];
+    if (currentPuzzle && !attemptedPuzzles.some(p => p.id === currentPuzzle.id)) {
+      setAttemptedPuzzles(prev => [...prev, { id: currentPuzzle.id, solved: false }]);
+    }
     if (currentPuzzleIndex < puzzles.length - 1) {
       loadPuzzle(currentPuzzleIndex + 1)
     } else {
@@ -459,77 +484,40 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
 
   return (
     <div className="h-full flex flex-col">
-      {/* Puzzle Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Puzzle #{currentPuzzle.id} ({currentPuzzle.rating})
-            </h1>
-            <p className="text-gray-600">
-              You play as <span className="font-semibold">{inferredUserSide === 'white' ? 'White' : 'Black'}</span> - {currentPuzzle.category}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Current turn: {game.turn() === 'w' ? 'White' : 'Black'} | 
-              Solution moves: {currentPuzzle.moves.length} | 
-              Progress: {solutionIndex}/{currentPuzzle.moves.length}
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={resetPuzzle}
-              disabled={isPuzzleComplete}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={nextPuzzle}
-            >
-              <SkipForward className="h-4 w-4 mr-2" />
-              Skip
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 flex gap-6">
         {/* Side Panel - Left Side */}
         <div className="w-80 space-y-4">
-          {/* Navigation */}
+          {/* Puzzle Info */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Navigation</CardTitle>
+              <CardTitle>Puzzle Info</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={previousPuzzle}
-                  disabled={currentPuzzleIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={nextPuzzle}
-                  disabled={currentPuzzleIndex === puzzles.length - 1}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+              <div className="space-y-2">
+                 <div className="flex justify-between">
+                   <span className="text-sm text-gray-500">Puzzle ID:</span>
+                   <span className="text-sm font-mono">{currentPuzzle.id}</span>
+                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Rating:</span>
+                  <span className="text-sm font-medium">{currentPuzzle.rating}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Category:</span>
+                  <span className="text-sm font-medium">{currentPuzzle.category}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Side:</span>
+                  <span className="text-sm font-medium capitalize">{inferredUserSide === 'white' ? 'White' : 'Black'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">Progress:</span>
+                  <span className="text-sm font-medium">
+                    {solutionIndex}/{currentPuzzle.moves.length}
+                  </span>
+                </div>
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                {currentPuzzleIndex + 1} of {puzzles.length} puzzles
-              </p>
             </CardContent>
           </Card>
 
@@ -581,32 +569,35 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
             </CardContent>
           </Card>
 
-          {/* Puzzle Info */}
+          {/* Navigation */}
           <Card>
             <CardHeader>
-              <CardTitle>Puzzle Info</CardTitle>
+              <CardTitle className="text-lg">Navigation</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Rating:</span>
-                  <span className="text-sm font-medium">{currentPuzzle.rating}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Category:</span>
-                  <span className="text-sm font-medium">{currentPuzzle.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Side:</span>
-                  <span className="text-sm font-medium capitalize">{inferredUserSide === 'white' ? 'White' : 'Black'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Progress:</span>
-                  <span className="text-sm font-medium">
-                    {solutionIndex}/{currentPuzzle.moves.length}
-                  </span>
-                </div>
+              {/* Tag-based navigation */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {attemptedPuzzles.map((p, idx) => (
+                  <button
+                    key={p.id}
+                    className={`px-2 py-1 rounded text-xs font-semibold border transition-colors duration-150
+                      ${currentPuzzle && puzzles[currentPuzzleIndex]?.id === p.id
+                        ? 'ring-2 ring-blue-400 border-blue-400'
+                        : p.solved
+                          ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                          : 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200'}`}
+                    onClick={() => {
+                      const puzzleIdx = puzzles.findIndex(z => z.id === p.id);
+                      if (puzzleIdx !== -1) loadPuzzle(puzzleIdx);
+                    }}
+                  >
+                    {p.id}
+                  </button>
+                ))}
               </div>
+              <p className="text-sm text-gray-500 mt-2">
+                {currentPuzzleIndex + 1} of {puzzles.length} puzzles
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -629,6 +620,31 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
                   `Move ${solutionIndex + 1} of ${currentPuzzle.moves.length}`
                 )}
               </CardDescription>
+              {/* Navigation buttons above the board */}
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPuzzle}
+                  disabled={!isPuzzleComplete}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => { await nextPuzzle(); }}
+                >
+                  Skip
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetPuzzle}
+                >
+                  Reset
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="h-full flex items-center justify-center">
               <div className="w-full max-w-md">

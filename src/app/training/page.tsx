@@ -37,8 +37,8 @@ export default function PuzzlesPage() {
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Chess Puzzles</h1>
-          <p className="text-gray-600 mt-1">Challenge yourself with tactical puzzles</p>
+          <h1 className="text-3xl font-bold text-gray-900">Training</h1>
+          <p className="text-gray-600 mt-1">Challenge yourself with tactical training sessions</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@ export default function PuzzlesPage() {
 
         {/* Puzzle List Table */}
         <div className="mt-12">
-          <h2 className="text-2xl font-semibold mb-4">Available Puzzles</h2>
+          <h2 className="text-2xl font-semibold mb-4">Available Training Sessions</h2>
           <div className="overflow-x-auto rounded-lg shadow border bg-white">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
