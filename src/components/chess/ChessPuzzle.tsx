@@ -55,6 +55,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
   const [attemptedPuzzleIds, setAttemptedPuzzleIds] = useState<Set<string>>(new Set())
   const [inferredUserSide, setInferredUserSide] = useState<'white' | 'black'>('white')
   const [lastMoveSquares, setLastMoveSquares] = useState<{ from: string, to: string } | null>(null)
+  const [checkedKingSquare, setCheckedKingSquare] = useState<string | null>(null)
 
   // Fetch a random puzzle from Lichess API
   const fetchRandomPuzzle = useCallback(async (retryCount = 0) => {
@@ -309,7 +310,26 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
     }
   }, [puzzles])
 
-  // Handle piece movement
+  // Helper to find the king's square if in check
+  const getCheckedKingSquare = (gameInstance: Chess) => {
+    if (!gameInstance.inCheck()) return null;
+    const board = gameInstance.board();
+    const turn = gameInstance.turn(); // 'w' or 'b' (the side to move is in check)
+    for (let rank = 0; rank < 8; rank++) {
+      for (let file = 0; file < 8; file++) {
+        const piece = board[rank][file];
+        if (piece && piece.type === 'k' && piece.color === turn) {
+          // Convert to algebraic square
+          const fileChar = String.fromCharCode('a'.charCodeAt(0) + file);
+          const rankChar = (8 - rank).toString();
+          return fileChar + rankChar;
+        }
+      }
+    }
+    return null;
+  };
+
+  // Update lastMoveSquares and checkedKingSquare after every move in onDrop
   const onDrop = useCallback((sourceSquare: string, targetSquare: string) => {
     if (isPuzzleComplete) return false
     const currentPuzzle = puzzles[currentPuzzleIndex]
@@ -319,7 +339,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
     const expectedMove = currentPuzzle.moves[solutionIndex]
     if (moveString === expectedMove) {
       // Correct move
-      game.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
+      const move = game.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
+      setLastMoveSquares({ from: sourceSquare, to: targetSquare }) // highlight user move
+      setCheckedKingSquare(getCheckedKingSquare(game));
       setMoveHistory(prev => [...prev, moveString])
       let newSolutionIdx = solutionIndex + 1
       // Auto-play opponent's move if exists
@@ -329,6 +351,8 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
         const to = opponentMove.slice(2, 4)
         try {
           game.move({ from, to, promotion: 'q' })
+          setLastMoveSquares({ from, to }) // highlight opponent move
+          setCheckedKingSquare(getCheckedKingSquare(game));
           newSolutionIdx++
         } catch (error) {
           console.error('Error auto-playing opponent move:', opponentMove, error)
@@ -346,9 +370,15 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       // Wrong move
       setWrongMoves(prev => [...prev, moveString])
       setGame(new Chess(game.fen()))
+      setCheckedKingSquare(getCheckedKingSquare(game));
       return false
     }
   }, [game, puzzles, currentPuzzleIndex, solutionIndex, moveHistory, isPuzzleComplete, onMoveComplete, onPuzzleComplete, inferredUserSide])
+
+  // Also set checkedKingSquare on puzzle load
+  useEffect(() => {
+    setCheckedKingSquare(getCheckedKingSquare(game));
+  }, [game])
 
   // Navigation functions
   const nextPuzzle = async () => {
@@ -607,14 +637,19 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
                   onPieceDrop={onDrop}
                   boardWidth={400}
                   boardOrientation={inferredUserSide}
-                  customSquareStyles={
-                    lastMoveSquares
+                  customSquareStyles={{
+                    ...(lastMoveSquares
                       ? {
                           [lastMoveSquares.from]: { background: 'rgba(255, 255, 0, 0.4)' },
                           [lastMoveSquares.to]: { background: 'rgba(255, 255, 0, 0.7)' }
                         }
-                      : {}
-                  }
+                      : {}),
+                    ...(checkedKingSquare
+                      ? {
+                          [checkedKingSquare]: { boxShadow: '0 0 20px 5px red inset', background: 'rgba(255,0,0,0.2)' }
+                        }
+                      : {})
+                  }}
                 />
                 <div className="text-xs text-gray-500 mt-2 text-center">
                   Debug: User plays {inferredUserSide === 'white' ? 'White' : 'Black'}, Board orientation: {inferredUserSide}

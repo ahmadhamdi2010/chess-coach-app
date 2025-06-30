@@ -86,7 +86,7 @@ export default function PuzzlePage() {
   // Add message to chat
   const addMessage = (type: 'user' | 'ai', content: string) => {
     const newMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
       type,
       content,
       timestamp: new Date()
