@@ -16,6 +16,16 @@ import {
   XCircle
 } from 'lucide-react'
 
+type Square =
+  | 'a1' | 'a2' | 'a3' | 'a4' | 'a5' | 'a6' | 'a7' | 'a8'
+  | 'b1' | 'b2' | 'b3' | 'b4' | 'b5' | 'b6' | 'b7' | 'b8'
+  | 'c1' | 'c2' | 'c3' | 'c4' | 'c5' | 'c6' | 'c7' | 'c8'
+  | 'd1' | 'd2' | 'd3' | 'd4' | 'd5' | 'd6' | 'd7' | 'd8'
+  | 'e1' | 'e2' | 'e3' | 'e4' | 'e5' | 'e6' | 'e7' | 'e8'
+  | 'f1' | 'f2' | 'f3' | 'f4' | 'f5' | 'f6' | 'f7' | 'f8'
+  | 'g1' | 'g2' | 'g3' | 'g4' | 'g5' | 'g6' | 'g7' | 'g8'
+  | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'h7' | 'h8';
+
 interface Puzzle {
   id: string
   fen: string
@@ -23,6 +33,8 @@ interface Puzzle {
   rating: number
   category: string
   side: 'white' | 'black'
+  pgn?: string
+  initialPly?: number
 }
 
 interface ChessPuzzleProps {
@@ -36,10 +48,13 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0)
   const [solutionIndex, setSolutionIndex] = useState(0)
   const [moveHistory, setMoveHistory] = useState<string[]>([])
+  const [wrongMoves, setWrongMoves] = useState<string[]>([])
   const [isPuzzleComplete, setIsPuzzleComplete] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attemptedPuzzleIds, setAttemptedPuzzleIds] = useState<Set<string>>(new Set())
+  const [inferredUserSide, setInferredUserSide] = useState<'white' | 'black'>('white')
+  const [lastMoveSquares, setLastMoveSquares] = useState<{ from: string, to: string } | null>(null)
 
   // Fetch a random puzzle from Lichess API
   const fetchRandomPuzzle = useCallback(async (retryCount = 0) => {
@@ -57,7 +72,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       
       const puzzleData = await response.json()
       
-      // Check if we've already attempted this puzzle - use current state
+      // Check if we've already attempted this puzzle
       const currentAttemptedIds = Array.from(attemptedPuzzleIds)
       if (currentAttemptedIds.includes(puzzleData.puzzle.id)) {
         // Try again to get a different puzzle
@@ -74,7 +89,8 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
         const chess = new Chess()
         const puzzleStartPly = puzzleData.puzzle.initialPly || 0
         
-        // Play moves up to the puzzle start position
+        // Play moves up to and including puzzleStartPly - 1 to get to the puzzle starting position
+        // puzzleStartPly represents the ply number of the first solution move, so we want the position after puzzleStartPly - 1 moves
         for (let i = 0; i < puzzleStartPly; i++) {
           if (moves[i] && moves[i] !== '') {
             chess.move(moves[i])
@@ -87,8 +103,25 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           moves: puzzleData.puzzle.solution,
           rating: puzzleData.puzzle.rating || 1500,
           category: puzzleData.puzzle.themes?.[0] || 'Tactics',
-          side: puzzleStartPly % 2 === 0 ? 'white' : 'black'
+          side: puzzleStartPly % 2 === 0 ? 'white' : 'black',
+          pgn: puzzleData.game.pgn, // Store the original PGN
+          initialPly: puzzleData.puzzle.initialPly
         }
+        
+        console.log('Puzzle data:', {
+          id: puzzleData.puzzle.id,
+          initialPly: puzzleData.puzzle.initialPly,
+          side: lichessPuzzle.side,
+          solution: puzzleData.puzzle.solution,
+          fen: lichessPuzzle.fen
+        })
+        
+        // Additional debugging: verify the calculated FEN matches the PGN
+        console.log('Verifying FEN calculation:')
+        console.log('- PGN:', pgn)
+        console.log('- Moves played:', moves.slice(0, puzzleStartPly))
+        console.log('- Calculated FEN:', chess.fen())
+        console.log('- Expected FEN from Lichess:', lichessPuzzle.fen)
         
         return lichessPuzzle
       }
@@ -115,7 +148,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           moves: ['d6d5', 'e4d5', 'f6d5'],
           rating: 1500,
           category: 'Fork',
-          side: 'black'
+          side: 'black',
+          pgn: 'e4 e5 Nf3 Nc6 Bc4 Nf6 d3 d6 O-O Be7 Nc3 O-O Be3 Be6 Qd2 Qd7 Ng5 Bg4 f3 Bh5 g4 Bg6 h4 h6 Nf3 d5 exd5 Nxd5 Nxd5 Qxd5',
+          initialPly: 6
         },
         {
           id: 'demo-2',
@@ -123,7 +158,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           moves: ['d2d4', 'e5d4', 'c4f7'],
           rating: 1200,
           category: 'Pin',
-          side: 'white'
+          side: 'white',
+          pgn: 'e4 e5 Nf3 Nc6 Bc4 Nf6 d3 d6 O-O Be7 Nc3 O-O Be3 Be6 Qd2 Qd7 Ng5 Bg4 f3 Bh5 g4 Bg6 h4 h6 Nf3 d5 exd5 Nxd5 Nxd5 Qxd5',
+          initialPly: 4
         },
         {
           id: 'demo-3',
@@ -131,7 +168,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           moves: ['d2d4', 'e5d4', 'c2c3'],
           rating: 1300,
           category: 'Tactics',
-          side: 'white'
+          side: 'white',
+          pgn: 'e4 e5 Nf3 Nc6 Bc4 Nf6 d3 d6 O-O Be7 Nc3 O-O Be3 Be6 Qd2 Qd7 Ng5 Bg4 f3 Bh5 g4 Bg6 h4 h6 Nf3 d5 exd5 Nxd5 Nxd5 Qxd5',
+          initialPly: 2
         }
       ]
       
@@ -157,61 +196,159 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
     }
   }, [fetchRandomPuzzle])
 
+  // Get full PGN of the puzzle
+  const getPuzzlePgn = useCallback(() => {
+    if (!puzzles[currentPuzzleIndex]) return ''
+    
+    try {
+      const chess = new Chess(puzzles[currentPuzzleIndex].fen)
+      const moves = puzzles[currentPuzzleIndex].moves
+      
+      // Play all the solution moves
+      for (const moveString of moves) {
+        const from = moveString.slice(0, 2)
+        const to = moveString.slice(2, 4)
+        chess.move({ from, to, promotion: 'q' })
+      }
+      
+      return chess.pgn()
+    } catch (err) {
+      console.warn('Failed to generate puzzle PGN:', err)
+      return ''
+    }
+  }, [puzzles, currentPuzzleIndex])
+
+  // Convert move string to PGN notation
+  const moveToPgn = useCallback((moveString: string, gameInstance: Chess) => {
+    try {
+      // Parse the move string (e.g., "e2e4" -> from: "e2", to: "e4")
+      const from = moveString.slice(0, 2)
+      const to = moveString.slice(2, 4)
+      
+      // Create a temporary game to make the move and get PGN
+      const tempGame = new Chess(gameInstance.fen())
+      const move = tempGame.move({ from, to, promotion: 'q' })
+      
+      if (move) {
+        return move.san // Standard Algebraic Notation (PGN format)
+      }
+      return moveString
+    } catch (err) {
+      console.warn('Failed to convert move to PGN:', err)
+      return moveString
+    }
+  }, [])
+
   // Load a specific puzzle
   const loadPuzzle = useCallback((index: number, puzzleList?: Puzzle[]) => {
     const puzzleArray = puzzleList || puzzles
     if (index >= 0 && index < puzzleArray.length) {
       const puzzle = puzzleArray[index]
-      console.log('Loading puzzle:', puzzle.id, 'with FEN:', puzzle.fen)
-      const newGame = new Chess(puzzle.fen)
-      console.log('New game FEN:', newGame.fen())
-      setGame(newGame)
+      // 1. Set up the board using PGN and initialPly
+      const newGame = new Chess()
+      let lastMove = null
+      if (puzzle.pgn && puzzle.initialPly !== undefined) {
+        newGame.loadPgn(puzzle.pgn)
+        const allMoves = newGame.history()
+        console.log('PGN moves:', allMoves)
+        console.log('initialPly:', puzzle.initialPly)
+        newGame.reset()
+        let lastMoveIndex = -1;
+        // Play moves up to and including initialPly (one more move)
+        for (let i = 0; i <= puzzle.initialPly && i < allMoves.length; i++) {
+          lastMove = allMoves[i]
+          const moveResult = newGame.move(allMoves[i])
+          lastMoveIndex = i;
+          console.log(`Move ${i + 1}: ${allMoves[i]}, FEN: ${newGame.fen()}`)
+        }
+        // Highlight the last move played (at initialPly)
+        if (lastMove && lastMoveIndex >= 0) {
+          const tempGame = new Chess()
+          tempGame.loadPgn(puzzle.pgn)
+          const moveObj = tempGame.history({ verbose: true })[lastMoveIndex]
+          if (moveObj) {
+            setLastMoveSquares({ from: moveObj.from, to: moveObj.to })
+          } else {
+            setLastMoveSquares(null)
+          }
+        } else {
+          setLastMoveSquares(null)
+        }
+        console.log('FEN after setup:', newGame.fen())
+        console.log('Expected FEN from Lichess:', puzzle.fen)
+        
+        // Additional debugging: verify the calculated FEN matches the PGN
+        console.log('Verifying FEN calculation in loadPuzzle:')
+        console.log('- PGN:', puzzle.pgn)
+        console.log('- Moves played:', allMoves.slice(0, puzzle.initialPly))
+        console.log('- Calculated FEN:', newGame.fen())
+        console.log('- Expected FEN from puzzle:', puzzle.fen)
+      }
+      // 2. Validate FEN (for debugging)
+      if (puzzle.fen && newGame.fen() !== puzzle.fen) {
+        console.warn('FEN mismatch after setup! Calculated:', newGame.fen(), 'Expected:', puzzle.fen)
+      }
+      // 3. Infer user side from the first solution move
+      let userSide = 'white'
+      if (puzzle.moves && puzzle.moves.length > 0) {
+        const firstSolutionMove = puzzle.moves[0]
+        const from = firstSolutionMove.slice(0, 2) as Square
+        const piece = newGame.get(from)
+        if (piece) {
+          userSide = piece.color === 'w' ? 'white' : 'black'
+        }
+      }
+      setGame(new Chess(newGame.fen()))
       setCurrentPuzzleIndex(index)
       setSolutionIndex(0)
       setMoveHistory([])
+      setWrongMoves([])
       setIsPuzzleComplete(false)
+      // Store userSide in a ref or state for use in UI and move validation
+      setInferredUserSide(userSide as 'white' | 'black')
     }
   }, [puzzles])
 
   // Handle piece movement
   const onDrop = useCallback((sourceSquare: string, targetSquare: string) => {
     if (isPuzzleComplete) return false
-
     const currentPuzzle = puzzles[currentPuzzleIndex]
     if (!currentPuzzle) return false
-
-    const move = game.move({
-      from: sourceSquare,
-      to: targetSquare,
-      promotion: 'q' // Always promote to queen for simplicity
-    })
-
-    if (move === null) return false
-
-    setGame(new Chess(game.fen()))
-    
+    if (game.turn() !== (inferredUserSide === 'white' ? 'w' : 'b')) return false
     const moveString = sourceSquare + targetSquare
     const expectedMove = currentPuzzle.moves[solutionIndex]
-    
     if (moveString === expectedMove) {
       // Correct move
+      game.move({ from: sourceSquare, to: targetSquare, promotion: 'q' })
       setMoveHistory(prev => [...prev, moveString])
-      setSolutionIndex(prev => prev + 1)
-      
-      // Check if puzzle is complete
-      if (solutionIndex + 1 >= currentPuzzle.moves.length) {
+      let newSolutionIdx = solutionIndex + 1
+      // Auto-play opponent's move if exists
+      if (newSolutionIdx < currentPuzzle.moves.length) {
+        const opponentMove = currentPuzzle.moves[newSolutionIdx]
+        const from = opponentMove.slice(0, 2)
+        const to = opponentMove.slice(2, 4)
+        try {
+          game.move({ from, to, promotion: 'q' })
+          newSolutionIdx++
+        } catch (error) {
+          console.error('Error auto-playing opponent move:', opponentMove, error)
+        }
+      }
+      setSolutionIndex(newSolutionIdx)
+      setGame(new Chess(game.fen()))
+      if (newSolutionIdx >= currentPuzzle.moves.length) {
         setIsPuzzleComplete(true)
         onPuzzleComplete?.(currentPuzzle.id, true)
       }
-      
       onMoveComplete?.(currentPuzzle.id, game.fen(), [...moveHistory, moveString])
       return true
     } else {
-      // Incorrect move - reset the piece
+      // Wrong move
+      setWrongMoves(prev => [...prev, moveString])
       setGame(new Chess(game.fen()))
       return false
     }
-  }, [game, puzzles, currentPuzzleIndex, solutionIndex, moveHistory, isPuzzleComplete, onMoveComplete, onPuzzleComplete])
+  }, [game, puzzles, currentPuzzleIndex, solutionIndex, moveHistory, isPuzzleComplete, onMoveComplete, onPuzzleComplete, inferredUserSide])
 
   // Navigation functions
   const nextPuzzle = async () => {
@@ -300,7 +437,12 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
               Puzzle #{currentPuzzle.id} ({currentPuzzle.rating})
             </h1>
             <p className="text-gray-600">
-              {currentPuzzle.side === 'white' ? 'White' : 'Black'} to move - {currentPuzzle.category}
+              You play as <span className="font-semibold">{inferredUserSide === 'white' ? 'White' : 'Black'}</span> - {currentPuzzle.category}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Current turn: {game.turn() === 'w' ? 'White' : 'Black'} | 
+              Solution moves: {currentPuzzle.moves.length} | 
+              Progress: {solutionIndex}/{currentPuzzle.moves.length}
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -327,42 +469,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
 
       {/* Main Content */}
       <div className="flex-1 flex gap-6">
-        {/* Chess Board */}
-        <div className="flex-1">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Chess Board
-              </CardTitle>
-              <CardDescription>
-                {isPuzzleComplete ? (
-                  <span className="text-green-600 flex items-center gap-1">
-                    <CheckCircle className="h-4 w-4" />
-                    Puzzle Complete!
-                  </span>
-                ) : (
-                  `Move ${solutionIndex + 1} of ${currentPuzzle.moves.length}`
-                )}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-full flex items-center justify-center">
-              <div className="w-full max-w-md">
-                <Chessboard
-                  position={game.fen()}
-                  onPieceDrop={onDrop}
-                  boardWidth={400}
-                  customBoardStyle={{
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Side Panel */}
+        {/* Side Panel - Left Side */}
         <div className="w-80 space-y-4">
           {/* Navigation */}
           <Card>
@@ -405,17 +512,41 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {moveHistory.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No moves yet</p>
-                ) : (
-                  moveHistory.map((move, index) => (
-                    <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded">
-                      <span className="text-sm font-medium">Move {index + 1}</span>
-                      <span className="text-sm text-green-600">{move}</span>
-                    </div>
-                  ))
-                )}
+              <div className="space-y-4">
+                {/* Current Moves */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Your Moves:</h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {moveHistory.length === 0 && wrongMoves.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No moves yet</p>
+                    ) : (
+                      <>
+                        {/* Correct moves */}
+                        {moveHistory.map((move, index) => (
+                          <div key={`correct-${index}`} className="flex justify-between items-center p-2 bg-green-50 rounded">
+                            <span className="text-sm font-medium">Move {index + 1}</span>
+                            <span className="text-sm text-green-600 font-mono">{moveToPgn(move, game)}</span>
+                          </div>
+                        ))}
+                        {/* Wrong moves */}
+                        {wrongMoves.map((move, index) => (
+                          <div key={`wrong-${index}`} className="flex justify-between items-center p-2 bg-red-50 rounded">
+                            <span className="text-sm font-medium">Wrong</span>
+                            <span className="text-sm text-red-600 font-mono">{moveToPgn(move, game)}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Full Puzzle PGN */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Puzzle PGN:</h4>
+                  <div className="bg-gray-50 p-3 rounded text-xs font-mono text-gray-600 max-h-24 overflow-y-auto">
+                    {currentPuzzle.pgn || 'Loading...'}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -437,13 +568,56 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Side:</span>
-                  <span className="text-sm font-medium capitalize">{currentPuzzle.side}</span>
+                  <span className="text-sm font-medium capitalize">{inferredUserSide === 'white' ? 'White' : 'Black'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Progress:</span>
                   <span className="text-sm font-medium">
                     {solutionIndex}/{currentPuzzle.moves.length}
                   </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Chess Board - Center */}
+        <div className="flex-1">
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Chess Board
+              </CardTitle>
+              <CardDescription>
+                {isPuzzleComplete ? (
+                  <span className="text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    Puzzle Complete!
+                  </span>
+                ) : (
+                  `Move ${solutionIndex + 1} of ${currentPuzzle.moves.length}`
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-full flex items-center justify-center">
+              <div className="w-full max-w-md">
+                <Chessboard
+                  position={game.fen()}
+                  onPieceDrop={onDrop}
+                  boardWidth={400}
+                  boardOrientation={inferredUserSide}
+                  customSquareStyles={
+                    lastMoveSquares
+                      ? {
+                          [lastMoveSquares.from]: { background: 'rgba(255, 255, 0, 0.4)' },
+                          [lastMoveSquares.to]: { background: 'rgba(255, 255, 0, 0.7)' }
+                        }
+                      : {}
+                  }
+                />
+                <div className="text-xs text-gray-500 mt-2 text-center">
+                  Debug: User plays {inferredUserSide === 'white' ? 'White' : 'Black'}, Board orientation: {inferredUserSide}
                 </div>
               </div>
             </CardContent>
