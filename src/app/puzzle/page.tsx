@@ -21,6 +21,8 @@ export default function PuzzlePage() {
   const router = useRouter()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
+  const [currentPuzzleId, setCurrentPuzzleId] = useState<string | null>(null)
+  const [currentMoveHistory, setCurrentMoveHistory] = useState<string[]>([])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -32,19 +34,11 @@ export default function PuzzlePage() {
   const handleMoveComplete = (puzzleId: string, fen: string, moveHistory: string[]) => {
     // Send puzzle data to webhook for chat integration
     sendPuzzleDataToWebhook(puzzleId, fen, moveHistory)
-    
-    // Add AI response based on the move
-    const aiResponse = generateAIResponse(moveHistory.length)
-    addMessage('ai', aiResponse)
   }
 
   // Handle puzzle completion
   const handlePuzzleComplete = (puzzleId: string, success: boolean) => {
-    const completionMessage = success 
-      ? "Excellent! You've solved the puzzle correctly. Great tactical thinking!"
-      : "Good effort! Let's try another puzzle to improve your skills."
-    
-    addMessage('ai', completionMessage)
+    // Removed automatic AI response
   }
 
   // Send puzzle data to webhook
@@ -71,18 +65,6 @@ export default function PuzzlePage() {
     }
   }
 
-  // Generate AI response based on move number
-  const generateAIResponse = (moveNumber: number): string => {
-    const responses = [
-      "Good start! Look for tactical opportunities.",
-      "Nice move! Keep looking for the best continuation.",
-      "Excellent! You're on the right track.",
-      "Perfect! The position is improving.",
-      "Brilliant! You've found the key move."
-    ]
-    return responses[Math.min(moveNumber - 1, responses.length - 1)]
-  }
-
   // Add message to chat
   const addMessage = (type: 'user' | 'ai', content: string) => {
     const newMessage: ChatMessage = {
@@ -95,17 +77,49 @@ export default function PuzzlePage() {
   }
 
   // Send user message
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (inputMessage.trim()) {
-      addMessage('user', inputMessage)
-      setInputMessage('')
-      
-      // Simulate AI response
-      setTimeout(() => {
-        addMessage('ai', "I'm here to help you with the puzzle! What would you like to know?")
-      }, 1000)
+      const userMessage = inputMessage;
+      addMessage('user', userMessage);
+      setInputMessage('');
+
+      try {
+        // Send the user message to the external webhook
+        const response = await fetch('https://n8n.creativenour.tech/webhook/8fd26228-bda4-4aaf-a9d6-1ce049cc34b6', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            userId: user?.id,
+            puzzleId: currentPuzzleId,
+            moveHistory: currentMoveHistory,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Webhook response was not ok');
+        }
+
+        // Try to parse the response as JSON or text
+        let aiReply = '';
+        const responseText = await response.text();
+        try {
+          const data = JSON.parse(responseText);
+          aiReply = data.reply || responseText;
+        } catch {
+          aiReply = responseText;
+        }
+
+        addMessage('ai', aiReply);
+      } catch (error) {
+        addMessage('ai', 'Sorry, there was an error contacting the AI coach.');
+        console.error('Failed to send message to webhook:', error);
+      }
     }
-  }
+  };
 
   // Handle Enter key press
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -137,6 +151,8 @@ export default function PuzzlePage() {
           <ChessPuzzle 
             onMoveComplete={handleMoveComplete}
             onPuzzleComplete={handlePuzzleComplete}
+            onPuzzleChange={setCurrentPuzzleId}
+            onMoveHistoryChange={setCurrentMoveHistory}
           />
         </div>
 
@@ -219,7 +235,12 @@ export default function PuzzlePage() {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyPress={async (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      await sendMessage();
+                    }
+                  }}
                   placeholder="Type your message..."
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />

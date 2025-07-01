@@ -40,9 +40,11 @@ interface Puzzle {
 interface ChessPuzzleProps {
   onMoveComplete?: (puzzleId: string, fen: string, moveHistory: string[]) => void
   onPuzzleComplete?: (puzzleId: string, success: boolean) => void
+  onPuzzleChange?: (puzzleId: string) => void
+  onMoveHistoryChange?: (moveHistory: string[]) => void
 }
 
-export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessPuzzleProps) {
+export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzleChange, onMoveHistoryChange }: ChessPuzzleProps) {
   const [game, setGame] = useState<Chess>(new Chess())
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0)
@@ -310,8 +312,11 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       setIsPuzzleComplete(false)
       // Store userSide in a ref or state for use in UI and move validation
       setInferredUserSide(userSide as 'white' | 'black')
+      if (onPuzzleChange && puzzle) {
+        onPuzzleChange(puzzle.id)
+      }
     }
-  }, [puzzles])
+  }, [puzzles, onPuzzleChange])
 
   // Helper to find the king's square if in check
   const getCheckedKingSquare = (gameInstance: Chess) => {
@@ -447,6 +452,20 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       loadPuzzle(0)
     }
   }, [puzzles, currentPuzzleIndex, loadPuzzle])
+
+  // Notify parent of puzzle change
+  useEffect(() => {
+    if (puzzles.length > 0 && onPuzzleChange) {
+      onPuzzleChange(puzzles[currentPuzzleIndex]?.id)
+    }
+  }, [puzzles, currentPuzzleIndex, onPuzzleChange])
+
+  // Notify parent of moveHistory change
+  useEffect(() => {
+    if (onMoveHistoryChange) {
+      onMoveHistoryChange(moveHistory)
+    }
+  }, [moveHistory, onMoveHistoryChange])
 
   if (isLoading) {
     return (
