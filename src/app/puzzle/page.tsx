@@ -174,11 +174,12 @@ export default function PuzzlePage() {
           {/* Chat Messages Area */}
           <div className="flex-1 p-4 overflow-y-auto">
             {messages.length === 0 ? (
-              <div className="h-full bg-gray-50 rounded-lg flex items-center justify-center border border-dashed border-gray-300">
-                <div className="text-center">
-                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">Chat Messages</p>
-                  <p className="text-sm text-gray-400">AI coach messages will appear here</p>
+              <div className="space-y-4">
+                <div className="flex justify-start">
+                  <div className="max-w-xs px-4 py-2 rounded-lg bg-gray-100 text-gray-900">
+                    <p className="text-sm">Feel free to ask questions</p>
+                    <p className="text-xs opacity-70 mt-1">AI Coach</p>
+                  </div>
                 </div>
               </div>
             ) : (
