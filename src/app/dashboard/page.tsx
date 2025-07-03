@@ -30,7 +30,6 @@ export default function DashboardPage() {
   const [showPlanSelection, setShowPlanSelection] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid1' | 'paid2'>('free')
   const [planLoading, setPlanLoading] = useState(false)
-  const [userDataLoading, setUserDataLoading] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -61,7 +60,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkUserPlan = async () => {
       if (!user) return;
-      setUserDataLoading(true)
       // Fetch credits and profile data
       const [creditsRes, profileRes] = await Promise.all([
         supabase
@@ -84,7 +82,6 @@ export default function DashboardPage() {
           first_name: profileRes.data?.first_name
         })
       }
-      setUserDataLoading(false)
     }
     checkUserPlan()
   }, [user])
@@ -215,14 +212,16 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {userDataLoading ? (
-              'Loading...'
-            ) : (
-              `Welcome back, ${userPlan?.first_name || user.email?.split('@')[0]}!`
-            )}
-          </h1>
-          <p className="text-gray-600 mt-1">Here's your chess performance overview</p>
+          {userPlan ? (
+            <>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Welcome back, {userPlan.first_name || user.email?.split('@')[0]}!
+              </h1>
+              <p className="text-gray-600 mt-1">Here's your chess performance overview</p>
+            </>
+          ) : (
+            <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+          )}
         </div>
 
         {/* Stats Grid */}
