@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
-  signUp: (email: string, password: string) => Promise<{ error: any }>
+  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; data?: any; error?: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
 }
@@ -40,12 +40,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { error }
+  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          }
+        }
+      })
+
+      if (error) throw error
+
+      if (data.user) {
+        // Insert profile data
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            first_name: firstName,
+            last_name: lastName,
+            email: email
+          }])
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError)
+        }
+      }
+
+      return { success: true, data }
+    } catch (error) {
+      console.error('Signup error:', error)
+      return { success: false, error }
+    }
   }
 
   const signIn = async (email: string, password: string) => {

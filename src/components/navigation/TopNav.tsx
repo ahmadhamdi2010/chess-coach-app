@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Crown, LogOut, User, Settings, Target, BarChart3, ChevronDown, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,23 @@ import {
 
 export default function TopNav() {
   const { user, signOut } = useAuth()
+  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
+
+  // Fetch user's available credits
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('credits')
+        .select('available_credits')
+        .eq('id', user.id)
+        .single()
+      if (!error && data) {
+        setAvailableCredits(data.available_credits)
+      }
+    }
+    fetchCredits()
+  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
@@ -71,7 +90,9 @@ export default function TopNav() {
             {/* Credits Display */}
             <div className="hidden sm:flex items-center space-x-2 bg-purple-50 px-3 py-2 rounded-lg">
               <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-sm font-medium text-purple-700">125 Credits</span>
+              <span className="text-sm font-medium text-purple-700">
+                {availableCredits !== null ? `${availableCredits} Credits` : '...'}
+              </span>
             </div>
 
             {/* User Dropdown */}

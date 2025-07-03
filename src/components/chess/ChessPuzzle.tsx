@@ -15,6 +15,8 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 type Square =
   | 'a1' | 'a2' | 'a3' | 'a4' | 'a5' | 'a6' | 'a7' | 'a8'
@@ -44,6 +46,26 @@ interface ChessPuzzleProps {
   onMoveHistoryChange?: (moveHistory: string[]) => void
 }
 
+// Helper to record puzzle attempt in Supabase
+async function recordPuzzleAttempt({ userId, puzzleId, puzzleCategory, solved }: { userId: string, puzzleId: string, puzzleCategory?: string, solved: boolean }) {
+  if (!userId) return;
+  try {
+    const { error } = await supabase.from('user_puzzle_attempts').insert([
+      {
+        user_id: userId,
+        puzzle_id: puzzleId,
+        puzzle_category: puzzleCategory,
+        solved,
+      },
+    ])
+    if (error) {
+      console.error('Failed to record puzzle attempt:', error)
+    }
+  } catch (err) {
+    console.error('Error recording puzzle attempt:', err)
+  }
+}
+
 export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzleChange, onMoveHistoryChange }: ChessPuzzleProps) {
   const [game, setGame] = useState<Chess>(new Chess())
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
@@ -61,6 +83,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
   const [attemptedPuzzles, setAttemptedPuzzles] = useState<{ id: string, solved: boolean }[]>([])
   // Track if a wrong move was made for the current puzzle
   const [currentPuzzleWrongMove, setCurrentPuzzleWrongMove] = useState(false)
+  const { user } = useAuth();
 
   // Fetch a random puzzle from Lichess API
   const fetchRandomPuzzle = useCallback(async (retryCount = 0) => {
@@ -340,13 +363,26 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
   // Update attemptedPuzzles on puzzle completion
   const handlePuzzleComplete = useCallback((puzzleId: string, success: boolean) => {
     setAttemptedPuzzles(prev => {
+      // Prevent duplicate logging/attempts
       if (prev.some(p => p.id === puzzleId)) return prev;
       // Mark as solved only if no wrong move was made
       const solved = success && !currentPuzzleWrongMove;
+      // Record attempt in Supabase if user exists
+      if (user && puzzleId && puzzles[currentPuzzleIndex]) {
+        // Only record if failed (first wrong move) or solved with no failed moves
+        if (!solved || (solved && !currentPuzzleWrongMove)) {
+          recordPuzzleAttempt({
+            userId: user.id,
+            puzzleId,
+            puzzleCategory: puzzles[currentPuzzleIndex].category,
+            solved,
+          });
+        }
+      }
       return [...prev, { id: puzzleId, solved }];
     });
     if (onPuzzleComplete) onPuzzleComplete(puzzleId, success);
-  }, [onPuzzleComplete, currentPuzzleWrongMove]);
+  }, [onPuzzleComplete, currentPuzzleWrongMove, user, puzzles, currentPuzzleIndex]);
 
   // Reset wrong move tracker on puzzle load
   useEffect(() => {
@@ -407,11 +443,6 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
 
   // Navigation functions
   const nextPuzzle = async () => {
-    // If not already attempted, mark as failed if not solved
-    const currentPuzzle = puzzles[currentPuzzleIndex];
-    if (currentPuzzle && !attemptedPuzzles.some(p => p.id === currentPuzzle.id)) {
-      setAttemptedPuzzles(prev => [...prev, { id: currentPuzzle.id, solved: false }]);
-    }
     if (currentPuzzleIndex < puzzles.length - 1) {
       loadPuzzle(currentPuzzleIndex + 1)
     } else {

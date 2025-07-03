@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,16 +19,99 @@ import {
   Calendar,
   Award
 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [solvedCount, setSolvedCount] = useState<number | null>(null)
+  const [totalAttempts, setTotalAttempts] = useState<number | null>(null)
+  const [userPlan, setUserPlan] = useState<{ plan: string, available_credits: number, first_name?: string } | null>(null)
+  const [showPlanSelection, setShowPlanSelection] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid1' | 'paid2'>('free')
+  const [planLoading, setPlanLoading] = useState(false)
+  const [userDataLoading, setUserDataLoading] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/')
     }
   }, [user, loading, router])
+
+  // Fetch solved puzzles count and total attempts
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+      const solvedRes = await supabase
+        .from('user_puzzle_attempts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('solved', true)
+      const totalRes = await supabase
+        .from('user_puzzle_attempts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+      if (!solvedRes.error) setSolvedCount(solvedRes.count ?? 0)
+      if (!totalRes.error) setTotalAttempts(totalRes.count ?? 0)
+    }
+    fetchStats()
+  }, [user])
+
+  // Check if user has a plan
+  useEffect(() => {
+    const checkUserPlan = async () => {
+      if (!user) return;
+      setUserDataLoading(true)
+      // Fetch credits and profile data
+      const [creditsRes, profileRes] = await Promise.all([
+        supabase
+          .from('credits')
+          .select('plan, available_credits')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('profiles')
+          .select('first_name')
+          .eq('id', user.id)
+          .single()
+      ])
+      
+      if (creditsRes.error || !creditsRes.data) {
+        setShowPlanSelection(true)
+      } else {
+        setUserPlan({
+          ...creditsRes.data,
+          first_name: profileRes.data?.first_name
+        })
+      }
+      setUserDataLoading(false)
+    }
+    checkUserPlan()
+  }, [user])
+
+  const handlePlanSelection = async () => {
+    setPlanLoading(true)
+    try {
+      const credits = selectedPlan === 'free' ? 100 : 200
+      const { error } = await supabase
+        .from('credits')
+        .insert([{
+          id: user!.id,
+          available_credits: credits,
+          plan: selectedPlan
+        }])
+      if (error) {
+        console.error('Plan selection error:', error)
+      } else {
+        setUserPlan({ plan: selectedPlan, available_credits: credits })
+        setShowPlanSelection(false)
+      }
+    } catch (err) {
+      console.error('Plan selection exception:', err)
+    } finally {
+      setPlanLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -42,6 +125,89 @@ export default function DashboardPage() {
     return null
   }
 
+  // Show plan selection if user doesn't have a plan
+  if (showPlanSelection) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center">Choose Your Plan</CardTitle>
+              <CardDescription className="text-center">
+                Select a plan to get started with ChessCoach
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedPlan === 'free' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlan('free')}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">Free Plan</h3>
+                      <p className="text-sm text-gray-600">Perfect for getting started</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-purple-600">100 Credits</div>
+                      <div className="text-sm text-gray-500">$0/month</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedPlan === 'paid1' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlan('paid1')}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">Paid Plan 1</h3>
+                      <p className="text-sm text-gray-600">For serious players</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-purple-600">200 Credits</div>
+                      <div className="text-sm text-gray-500">$9.99/month</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                    selectedPlan === 'paid2' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                  onClick={() => setSelectedPlan('paid2')}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">Paid Plan 2</h3>
+                      <p className="text-sm text-gray-600">For advanced players</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-purple-600">200 Credits</div>
+                      <div className="text-sm text-gray-500">$19.99/month</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <Button 
+                className="w-full" 
+                onClick={handlePlanSelection}
+                disabled={planLoading}
+              >
+                {planLoading ? 'Setting up account...' : 'Continue with selected plan'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav />
@@ -50,70 +216,19 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user.email?.split('@')[0]}!
+            {userDataLoading ? (
+              'Loading...'
+            ) : (
+              `Welcome back, ${userPlan?.first_name || user.email?.split('@')[0]}!`
+            )}
           </h1>
           <p className="text-gray-600 mt-1">Here's your chess performance overview</p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Rating</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,247</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+23</span> from last week
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Puzzles Solved</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+12</span> this week
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Study Hours</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">24.5</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+3.2</span> this week
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">68%</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">+5%</span> improvement
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Performance Chart */}
-          <div className="lg:col-span-2">
+          {/* Performance Chart and Stats Row */}
+          <div className="lg:col-span-2 flex flex-col gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -134,6 +249,35 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+            {/* Stats Row under Performance Chart */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Puzzles Solved</CardTitle>
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{solvedCount !== null ? solvedCount : '...'}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {/* You can add a delta here if you want */}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {totalAttempts === 0 ? '0%' : (totalAttempts && solvedCount !== null ? `${Math.round((solvedCount / totalAttempts) * 100)}%` : '...')}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {totalAttempts !== null && solvedCount !== null ? `${solvedCount} / ${totalAttempts} solved` : ''}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Credits and Quick Actions */}
@@ -151,13 +295,11 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600">125</div>
+                  <div className="text-3xl font-bold text-purple-600">
+                    {userPlan?.available_credits || '...'}
+                  </div>
                   <p className="text-sm text-gray-500">credits remaining</p>
                 </div>
-                <Progress value={62.5} className="h-2" />
-                <p className="text-xs text-gray-500 text-center">
-                  62.5% of monthly allocation used
-                </p>
                 <Button className="w-full" variant="outline">
                   Buy More Credits
                 </Button>
