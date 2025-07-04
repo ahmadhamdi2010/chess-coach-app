@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import SimpleCheckoutButton from '@/components/payment/SimpleCheckoutButton'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -33,12 +34,28 @@ export default function DashboardPage() {
   const [showPlanSelection, setShowPlanSelection] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid'>('free')
   const [planLoading, setPlanLoading] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [paymentCanceled, setPaymentCanceled] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/')
     }
   }, [user, loading, router])
+
+  // Check for payment success/cancel in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('success') === 'true') {
+      setPaymentSuccess(true)
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (urlParams.get('canceled') === 'true') {
+      setPaymentCanceled(true)
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+  }, [])
 
   // Fetch solved puzzles count and total attempts
   useEffect(() => {
@@ -90,20 +107,27 @@ export default function DashboardPage() {
   }, [user])
 
   const handlePlanSelection = async () => {
+    if (selectedPlan === 'paid') {
+      // For paid plan, redirect to payment flow
+      const paymentUrl = `${process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK}?client_reference_id=${user!.id}&prefilled_email=${user!.email}`
+      window.location.href = paymentUrl
+      return
+    }
+
+    // For free plan, set up the account
     setPlanLoading(true)
     try {
-      const credits = selectedPlan === 'free' ? 30 : 200
       const { error } = await supabase
         .from('credits')
         .insert([{
           id: user!.id,
-          available_credits: credits,
-          plan: selectedPlan
+          available_credits: 30,
+          plan: 'free'
         }])
       if (error) {
         console.error('Plan selection error:', error)
       } else {
-        setUserPlan({ plan: selectedPlan, available_credits: credits })
+        setUserPlan({ plan: 'free', available_credits: 30 })
         setShowPlanSelection(false)
       }
     } catch (err) {
@@ -181,7 +205,7 @@ export default function DashboardPage() {
                 onClick={handlePlanSelection}
                 disabled={planLoading}
               >
-                {planLoading ? 'Setting up account...' : 'Continue with selected plan'}
+                {planLoading ? 'Setting up account...' : selectedPlan === 'paid' ? 'Proceed to Payment' : 'Continue with Free Plan'}
               </Button>
             </CardContent>
           </Card>
@@ -195,6 +219,41 @@ export default function DashboardPage() {
       <TopNav />
       
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Payment Status Messages */}
+        {paymentSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-green-800">
+                  Payment successful! Your account has been upgraded to the paid plan.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {paymentCanceled && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-yellow-800">
+                  Payment was canceled. You can try again anytime.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className="mb-8">
           {userPlan ? (
@@ -258,9 +317,11 @@ export default function DashboardPage() {
                     <div className="text-center text-sm text-gray-600">
                       Upgrade to paid plan to unlock detailed statistics
                     </div>
-                    <Button className="w-full" variant="outline" disabled>
-                      View Stats
-                    </Button>
+                    <SimpleCheckoutButton 
+                      className="w-full"
+                    >
+                      Upgrade to Paid Plan
+                    </SimpleCheckoutButton>
                   </div>
                 )}
               </CardContent>
