@@ -44,6 +44,7 @@ interface ChessPuzzleProps {
   onPuzzleComplete?: (puzzleId: string, success: boolean) => void
   onPuzzleChange?: (puzzleId: string) => void
   onMoveHistoryChange?: (moveHistory: string[]) => void
+  puzzle?: Puzzle
 }
 
 // Helper to record puzzle attempt in Supabase
@@ -66,7 +67,7 @@ async function recordPuzzleAttempt({ userId, puzzleId, puzzleCategory, solved }:
   }
 }
 
-export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzleChange, onMoveHistoryChange }: ChessPuzzleProps) {
+export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzleChange, onMoveHistoryChange, puzzle }: ChessPuzzleProps) {
   const [game, setGame] = useState<Chess>(new Chess())
   const [puzzles, setPuzzles] = useState<Puzzle[]>([])
   const [currentPuzzleIndex, setCurrentPuzzleIndex] = useState(0)
@@ -472,8 +473,15 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
   // Initialize puzzles on component mount - only run once
   useEffect(() => {
     console.log('ChessPuzzle component mounted, fetching puzzles...')
-    fetchPuzzles()
-  }, []) // Empty dependency array to run only once
+    if (puzzle) {
+      setPuzzles([puzzle])
+      setCurrentPuzzleIndex(0)
+      setIsLoading(false)
+      setError(null)
+    } else {
+      fetchPuzzles()
+    }
+  }, [puzzle, fetchPuzzles])
 
   // Load first puzzle when puzzles are set
   useEffect(() => {

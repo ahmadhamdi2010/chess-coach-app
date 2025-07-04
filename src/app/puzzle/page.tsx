@@ -1,13 +1,14 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Send } from 'lucide-react'
 import ChessPuzzle from '@/components/chess/ChessPuzzle'
+import { Chess } from 'chess.js'
 
 interface ChatMessage {
   id: string
@@ -19,6 +20,9 @@ interface ChatMessage {
 export default function PuzzlePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams();
+  const isDaily = searchParams.get('daily') === '1';
+  const [dailyPuzzle, setDailyPuzzle] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [currentPuzzleId, setCurrentPuzzleId] = useState<string | null>(null)
@@ -29,6 +33,41 @@ export default function PuzzlePage() {
       router.push('/')
     }
   }, [user, loading, router])
+
+  // Fetch daily puzzle if needed
+  useEffect(() => {
+    if (!isDaily) return;
+    const fetchDaily = async () => {
+      const res = await fetch('https://lichess.org/api/puzzle/daily');
+      const data = await res.json();
+      // Derive FEN from PGN and initialPly
+      let fen = '';
+      try {
+        const chess = new Chess();
+        const moves = data.game.pgn.split(' ');
+        const puzzleStartPly = data.puzzle.initialPly || 0;
+        for (let i = 0; i < puzzleStartPly; i++) {
+          if (moves[i] && moves[i] !== '') {
+            chess.move(moves[i]);
+          }
+        }
+        fen = chess.fen();
+      } catch (e) {
+        fen = '';
+      }
+      setDailyPuzzle({
+        id: data.puzzle.id,
+        fen,
+        moves: data.puzzle.solution,
+        rating: data.puzzle.rating,
+        category: data.puzzle.themes?.[0] || 'Daily',
+        side: (data.puzzle.initialPly % 2 === 0 ? 'white' : 'black'),
+        pgn: data.game.pgn,
+        initialPly: data.puzzle.initialPly,
+      });
+    };
+    fetchDaily();
+  }, [isDaily]);
 
   // Handle puzzle move completion
   const handleMoveComplete = (puzzleId: string, fen: string, moveHistory: string[]) => {
@@ -148,12 +187,17 @@ export default function PuzzlePage() {
       <div className="h-[calc(100vh-4rem)] flex">
         {/* Puzzle View Section - Left Side */}
         <div className="flex-1 flex flex-col p-6">
-          <ChessPuzzle 
-            onMoveComplete={handleMoveComplete}
-            onPuzzleComplete={handlePuzzleComplete}
-            onPuzzleChange={setCurrentPuzzleId}
-            onMoveHistoryChange={setCurrentMoveHistory}
-          />
+          {isDaily && !dailyPuzzle ? (
+            <div className="flex-1 flex items-center justify-center text-lg">Loading daily puzzle...</div>
+          ) : (
+            <ChessPuzzle 
+              onMoveComplete={handleMoveComplete}
+              onPuzzleComplete={handlePuzzleComplete}
+              onPuzzleChange={setCurrentPuzzleId}
+              onMoveHistoryChange={setCurrentMoveHistory}
+              {...(isDaily && dailyPuzzle ? { puzzle: dailyPuzzle } : {})}
+            />
+          )}
         </div>
 
         {/* Chat Interface Section - Right Side */}

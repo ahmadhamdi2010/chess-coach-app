@@ -17,9 +17,12 @@ import {
   Zap,
   BarChart3,
   Calendar,
-  Award
+  Award,
+  Play,
+  Settings as SettingsIcon
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -217,7 +220,7 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome back, {userPlan.first_name || user.email?.split('@')[0]}!
               </h1>
-              <p className="text-gray-600 mt-1">Here's your chess performance overview</p>
+              <p className="text-gray-600 mt-1">Your account's dashboard and overview</p>
             </>
           ) : (
             <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-2" />
@@ -226,29 +229,8 @@ export default function DashboardPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Performance Chart and Stats Row */}
+          {/* Left/Main Column: Puzzles Solved, Success Rate, View Stats */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Performance Over Time
-                </CardTitle>
-                <CardDescription>
-                  Your rating progression over the last 30 days
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">Performance chart will be displayed here</p>
-                    <p className="text-sm text-gray-400">Chart library integration coming soon</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Stats Row under Performance Chart */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -277,9 +259,22 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+            {/* View Stats Card at the bottom */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">View Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Link href="/stats">
+                  <Button className="w-full" variant="outline">
+                    View Stats
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Credits and Quick Actions */}
+          {/* Right Column: Available Credits, Daily Puzzle */}
           <div className="space-y-6">
             {/* Credits Card */}
             <Card>
@@ -289,7 +284,7 @@ export default function DashboardPage() {
                   Available Credits
                 </CardTitle>
                 <CardDescription>
-                  Use credits to access premium features
+                  Use credits to prompt our chess AI agent
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -304,43 +299,22 @@ export default function DashboardPage() {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* Recent Achievements */}
+            {/* Daily Puzzle Card under Credits */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-yellow-500" />
-                  Recent Achievements
+                  <Target className="h-5 w-5" />
+                  Daily Puzzle
                 </CardTitle>
+                <CardDescription>Today's featured puzzle</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3 p-2 bg-green-50 rounded-lg">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <Trophy className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Rating Milestone</p>
-                    <p className="text-xs text-gray-500">Reached 1200+ rating</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Target className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Puzzle Master</p>
-                    <p className="text-xs text-gray-500">Solved 100+ puzzles</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-2 bg-purple-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Consistency</p>
-                    <p className="text-xs text-gray-500">7-day study streak</p>
-                  </div>
-                </div>
+              <CardContent>
+                <Link href="/puzzle?daily=1">
+                  <Button className="w-full">
+                    <Play className="h-4 w-4 mr-2" />
+                    Attempt Puzzle
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
@@ -351,24 +325,27 @@ export default function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Jump back into your chess training
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button className="h-20 flex flex-col items-center justify-center gap-2" variant="outline">
-                  <Target className="h-6 w-6" />
-                  <span>Daily Puzzle</span>
-                </Button>
-                <Button className="h-20 flex flex-col items-center justify-center gap-2" variant="outline">
-                  <BookOpen className="h-6 w-6" />
-                  <span>Continue Lesson</span>
-                </Button>
-                <Button className="h-20 flex flex-col items-center justify-center gap-2" variant="outline">
-                  <User className="h-6 w-6" />
-                  <span>Play Game</span>
-                </Button>
+                <Link href="/support">
+                  <Button className="h-20 flex flex-col items-center justify-center gap-2 w-full" variant="outline">
+                    <BookOpen className="h-6 w-6" />
+                    <span>Support</span>
+                  </Button>
+                </Link>
+                <Link href="/settings">
+                  <Button className="h-20 flex flex-col items-center justify-center gap-2 w-full" variant="outline">
+                    <SettingsIcon className="h-6 w-6" />
+                    <span>Settings</span>
+                  </Button>
+                </Link>
+                <Link href="/profile">
+                  <Button className="h-20 flex flex-col items-center justify-center gap-2 w-full" variant="outline">
+                    <User className="h-6 w-6" />
+                    <span>Profile</span>
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
