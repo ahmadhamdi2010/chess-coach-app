@@ -653,9 +653,6 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                {currentPuzzleIndex + 1} of {puzzles.length} puzzles
-              </p>
             </CardContent>
           </Card>
         </div>
