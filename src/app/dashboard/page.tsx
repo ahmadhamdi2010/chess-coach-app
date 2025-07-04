@@ -31,7 +31,7 @@ export default function DashboardPage() {
   const [totalAttempts, setTotalAttempts] = useState<number | null>(null)
   const [userPlan, setUserPlan] = useState<{ plan: string, available_credits: number, first_name?: string } | null>(null)
   const [showPlanSelection, setShowPlanSelection] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid1' | 'paid2'>('free')
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'paid'>('free')
   const [planLoading, setPlanLoading] = useState(false)
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function DashboardPage() {
   const handlePlanSelection = async () => {
     setPlanLoading(true)
     try {
-      const credits = selectedPlan === 'free' ? 100 : 200
+      const credits = selectedPlan === 'free' ? 30 : 200
       const { error } = await supabase
         .from('credits')
         .insert([{
@@ -148,10 +148,10 @@ export default function DashboardPage() {
                   <div className="flex justify-between items-center">
                     <div>
                       <h3 className="font-semibold">Free Plan</h3>
-                      <p className="text-sm text-gray-600">Perfect for getting started</p>
+                      <p className="text-sm text-gray-600">Perfect for getting started (no stats page access)</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-purple-600">100 Credits</div>
+                      <div className="text-lg font-bold text-purple-600">30 Credits</div>
                       <div className="text-sm text-gray-500">$0/month</div>
                     </div>
                   </div>
@@ -159,36 +159,18 @@ export default function DashboardPage() {
                 
                 <div 
                   className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPlan === 'paid1' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
+                    selectedPlan === 'paid' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
                   }`}
-                  onClick={() => setSelectedPlan('paid1')}
+                  onClick={() => setSelectedPlan('paid')}
                 >
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="font-semibold">Paid Plan 1</h3>
-                      <p className="text-sm text-gray-600">For serious players</p>
+                      <h3 className="font-semibold">Paid Plan</h3>
+                      <p className="text-sm text-gray-600">Full access with detailed stats</p>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-purple-600">200 Credits</div>
-                      <div className="text-sm text-gray-500">$9.99/month</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div 
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPlan === 'paid2' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPlan('paid2')}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-semibold">Paid Plan 2</h3>
-                      <p className="text-sm text-gray-600">For advanced players</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-bold text-purple-600">200 Credits</div>
-                      <div className="text-sm text-gray-500">$19.99/month</div>
+                      <div className="text-sm text-gray-500">$3/month</div>
                     </div>
                   </div>
                 </div>
@@ -265,11 +247,22 @@ export default function DashboardPage() {
                 <CardTitle className="text-sm font-medium">View Stats</CardTitle>
               </CardHeader>
               <CardContent>
-                <Link href="/stats">
-                  <Button className="w-full" variant="outline">
-                    View Stats
-                  </Button>
-                </Link>
+                {userPlan?.plan === 'paid' ? (
+                  <Link href="/stats">
+                    <Button className="w-full" variant="outline">
+                      View Stats
+                    </Button>
+                  </Link>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-center text-sm text-gray-600">
+                      Upgrade to paid plan to unlock detailed statistics
+                    </div>
+                    <Button className="w-full" variant="outline" disabled>
+                      View Stats
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

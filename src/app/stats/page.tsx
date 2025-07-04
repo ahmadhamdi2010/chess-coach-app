@@ -16,6 +16,8 @@ export default function StatsPage() {
   const [totalAttempts, setTotalAttempts] = useState<number | null>(null)
   const [chartData, setChartData] = useState<any[]>([])
   const [categoryChartData, setCategoryChartData] = useState<any[]>([])
+  const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [planLoading, setPlanLoading] = useState(true)
   // Date range state
   const today = new Date();
   const defaultStart = new Date(today);
@@ -30,6 +32,28 @@ export default function StatsPage() {
       router.push('/')
     }
   }, [user, loading, router])
+
+  // Check user's plan
+  useEffect(() => {
+    const checkUserPlan = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('credits')
+        .select('plan')
+        .eq('id', user.id)
+        .single()
+      
+      if (!error && data) {
+        setUserPlan(data.plan)
+        // Redirect free users to dashboard
+        if (data.plan === 'free') {
+          router.push('/dashboard')
+        }
+      }
+      setPlanLoading(false)
+    }
+    checkUserPlan()
+  }, [user, router])
 
   // Fetch solved puzzles count and total attempts for the selected range
   useEffect(() => {
@@ -146,7 +170,7 @@ export default function StatsPage() {
     },
   }
 
-  if (loading) {
+  if (loading || planLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
@@ -155,6 +179,11 @@ export default function StatsPage() {
   }
 
   if (!user) {
+    return null
+  }
+
+  // Don't render if user is on free plan (they will be redirected)
+  if (userPlan === 'free') {
     return null
   }
 
