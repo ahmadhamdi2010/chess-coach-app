@@ -24,8 +24,8 @@ export default function SimpleCheckoutButton({
     // Add user ID as a parameter to track the payment
     const paymentUrl = `${STRIPE_PAYMENT_LINK}?client_reference_id=${user.id}&prefilled_email=${user.email}`
     
-    // Redirect to your existing Stripe payment link with user tracking
-    window.open(paymentUrl, '_blank')
+    // Redirect to Stripe payment link with user tracking
+    window.location.href = paymentUrl
   }
 
   return (

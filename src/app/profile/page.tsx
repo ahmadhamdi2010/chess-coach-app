@@ -98,16 +98,22 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">1,247</div>
-                  <p className="text-sm text-gray-500">Current Rating</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">156</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {solvedCount !== null ? solvedCount : '...'}
+                  </div>
                   <p className="text-sm text-gray-500">Puzzles Solved</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">24.5h</div>
-                  <p className="text-sm text-gray-500">Study Time</p>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
+                  </div>
+                  <p className="text-sm text-gray-500">Member Since</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 capitalize">
+                    {userPlan || '...'}
+                  </div>
+                  <p className="text-sm text-gray-500">Plan</p>
                 </div>
               </CardContent>
             </Card>

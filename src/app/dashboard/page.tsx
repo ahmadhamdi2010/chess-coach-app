@@ -8,13 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { 
-  Trophy, 
   Target, 
   BookOpen, 
   User, 
   TrendingUp, 
-  Clock, 
   Zap,
+  Play,
+  Settings as SettingsIcon
   BarChart3,
   Calendar,
   Award
