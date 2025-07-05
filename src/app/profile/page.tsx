@@ -6,13 +6,15 @@ import { useEffect, useState } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { User, Mail, Calendar, Trophy } from 'lucide-react'
+import { User, Mail, Trophy } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function ProfilePage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [profile, setProfile] = useState<{ first_name: string, last_name: string, email: string, created_at: string } | null>(null)
+  const [solvedCount, setSolvedCount] = useState<number | null>(null)
+  const [userPlan, setUserPlan] = useState<string | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -23,12 +25,29 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, email, created_at')
-        .eq('id', user.id)
-        .single()
-      if (!error && data) setProfile(data)
+      
+      // Fetch profile data, solved puzzles count, and user plan
+      const [profileRes, solvedRes, planRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('first_name, last_name, email, created_at')
+          .eq('id', user.id)
+          .single(),
+        supabase
+          .from('user_puzzle_attempts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('solved', true),
+        supabase
+          .from('credits')
+          .select('plan')
+          .eq('id', user.id)
+          .single()
+      ])
+      
+      if (!profileRes.error && profileRes.data) setProfile(profileRes.data)
+      if (!solvedRes.error) setSolvedCount(solvedRes.count ?? 0)
+      if (!planRes.error && planRes.data) setUserPlan(planRes.data.plan)
     }
     fetchProfile()
   }, [user])
@@ -104,33 +123,27 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">1,247</div>
-                  <p className="text-sm text-gray-500">Current Rating</p>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">156</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {solvedCount !== null ? solvedCount : '...'}
+                  </div>
                   <p className="text-sm text-gray-500">Puzzles Solved</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">24.5h</div>
-                  <p className="text-sm text-gray-500">Study Time</p>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
+                  </div>
+                  <p className="text-sm text-gray-500">Member Since</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 capitalize">
+                    {userPlan || '...'}
+                  </div>
+                  <p className="text-sm text-gray-500">Plan</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Member Since
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500">
-                  {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Recently'}
-                </p>
-              </CardContent>
-            </Card>
+
           </div>
         </div>
       </div>
