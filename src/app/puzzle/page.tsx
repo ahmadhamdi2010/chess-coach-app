@@ -3,12 +3,22 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import type { Puzzle } from '@/components/chess/ChessPuzzle'
 import TopNav from '@/components/navigation/TopNav'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Send } from 'lucide-react'
 import ChessPuzzle from '@/components/chess/ChessPuzzle'
 import { Chess } from 'chess.js'
+
+interface Puzzle {
+  id: string
+  fen: string
+  moves: string[]
+  rating: number
+  category: string
+  side: 'white' | 'black'
+  pgn?: string
+  initialPly?: number
+}
 
 interface ChatMessage {
   id: string
