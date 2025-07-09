@@ -17,7 +17,7 @@ export type ChartConfig = Record<string, { label: string; color: string }>
 
 export interface ChartContainerProps {
   config: ChartConfig
-  children: React.ReactNode
+  children: React.ReactElement
   height?: number
 }
 
@@ -31,7 +31,7 @@ export function ChartContainer({ config, children, height = 300 }: ChartContaine
   )
 }
 
-export function ChartLegend({ content }: { content?: React.ReactNode }) {
+export function ChartLegend({ content }: { content?: React.ReactElement }) {
   return <ReLegend content={content} />
 }
 
@@ -50,7 +50,7 @@ export function ChartLegendContent(props: any) {
   )
 }
 
-export function ChartTooltip({ content }: { content?: React.ReactNode }) {
+export function ChartTooltip({ content }: { content?: React.ReactElement }) {
   return <ReTooltip content={content} />
 }
 
