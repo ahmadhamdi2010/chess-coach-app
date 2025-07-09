@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Send } from 'lucide-react'
@@ -27,7 +27,7 @@ interface ChatMessage {
   timestamp: Date
 }
 
-export default function PuzzlePage() {
+function PuzzleContent() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams();
@@ -307,4 +307,16 @@ export default function PuzzlePage() {
       </div>
     </div>
   )
-} 
+}
+
+export default function PuzzlePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <PuzzleContent />
+    </Suspense>
+  )
+}
