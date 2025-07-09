@@ -112,7 +112,20 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           initialPly: puzzleData.puzzle.initialPly
         }
         
-        // Puzzle data loaded successfully
+        console.log('Puzzle data:', {
+          id: puzzleData.puzzle.id,
+          initialPly: puzzleData.puzzle.initialPly,
+          side: lichessPuzzle.side,
+          solution: puzzleData.puzzle.solution,
+          fen: lichessPuzzle.fen
+        })
+        
+        // Additional debugging: verify the calculated FEN matches the PGN
+        console.log('Verifying FEN calculation:')
+        console.log('- PGN:', pgn)
+        console.log('- Moves played:', moves.slice(0, puzzleStartPly))
+        console.log('- Calculated FEN:', chess.fen())
+        console.log('- Expected FEN from Lichess:', lichessPuzzle.fen)
         
         return lichessPuzzle
       }
@@ -127,6 +140,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
   // Fetch initial puzzles
   const fetchPuzzles = useCallback(async () => {
     try {
+      console.log('Starting to fetch puzzles...')
       setIsLoading(true)
       setError(null)
       
@@ -164,13 +178,16 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
         }
       ]
       
+      console.log('Attempting to fetch Lichess puzzle...')
       // Try to fetch just one puzzle from Lichess API first
       const lichessPuzzle = await fetchRandomPuzzle()
       
       if (lichessPuzzle) {
+        console.log('Successfully fetched Lichess puzzle:', lichessPuzzle.id)
         setPuzzles([lichessPuzzle])
         setAttemptedPuzzleIds(new Set([lichessPuzzle.id]))
       } else {
+        console.log('Falling back to demo puzzles')
         // Fallback to demo puzzles
         setPuzzles(demoPuzzles)
       }
@@ -178,6 +195,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       console.error('Error in fetchPuzzles:', err)
       setError(err instanceof Error ? err.message : 'Failed to load puzzles')
     } finally {
+      console.log('Setting loading to false')
       setIsLoading(false)
     }
   }, [fetchRandomPuzzle])
@@ -236,6 +254,8 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
       if (puzzle.pgn && puzzle.initialPly !== undefined) {
         newGame.loadPgn(puzzle.pgn)
         const allMoves = newGame.history()
+        console.log('PGN moves:', allMoves)
+        console.log('initialPly:', puzzle.initialPly)
         newGame.reset()
         let lastMoveIndex = -1;
         // Play moves up to and including initialPly (one more move)
@@ -243,6 +263,7 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
           lastMove = allMoves[i]
           const moveResult = newGame.move(allMoves[i])
           lastMoveIndex = i;
+          console.log(`Move ${i + 1}: ${allMoves[i]}, FEN: ${newGame.fen()}`)
         }
         // Highlight the last move played (at initialPly)
         if (lastMove && lastMoveIndex >= 0) {
@@ -257,6 +278,15 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
         } else {
           setLastMoveSquares(null)
         }
+        console.log('FEN after setup:', newGame.fen())
+        console.log('Expected FEN from Lichess:', puzzle.fen)
+        
+        // Additional debugging: verify the calculated FEN matches the PGN
+        console.log('Verifying FEN calculation in loadPuzzle:')
+        console.log('- PGN:', puzzle.pgn)
+        console.log('- Moves played:', allMoves.slice(0, puzzle.initialPly))
+        console.log('- Calculated FEN:', newGame.fen())
+        console.log('- Expected FEN from puzzle:', puzzle.fen)
       }
       // 2. Validate FEN (for debugging)
       if (puzzle.fen && newGame.fen() !== puzzle.fen) {
@@ -411,7 +441,9 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete }: ChessP
 
   // Load first puzzle when puzzles are set
   useEffect(() => {
+    console.log('useEffect triggered - puzzles.length:', puzzles.length, 'currentPuzzleIndex:', currentPuzzleIndex)
     if (puzzles.length > 0 && currentPuzzleIndex === 0) {
+      console.log('Loading first puzzle:', puzzles[0].id)
       loadPuzzle(0)
     }
   }, [puzzles, currentPuzzleIndex, loadPuzzle])

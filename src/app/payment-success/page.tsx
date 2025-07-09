@@ -19,16 +19,25 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const handlePaymentSuccess = async () => {
+      console.log('Payment success effect running')
+      console.log('Auth loading:', authLoading)
+      console.log('User:', user?.email)
+      
       // Wait for auth to finish loading
       if (authLoading) {
+        console.log('Auth still loading, waiting...')
         return
       }
 
       if (!user) {
+        console.log('No user found in context, trying to get session directly')
+        
         // Try to get session directly from Supabase as fallback
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        console.log('Direct session check:', session?.user?.email, sessionError)
         
         if (session?.user) {
+          console.log('Found user in direct session:', session.user.email)
           // Use the session user instead
           const directUser = session.user
           
@@ -36,6 +45,9 @@ export default function PaymentSuccessPage() {
             // Get parameters from URL
             const sessionId = searchParams.get('session_id')
             const customerEmail = searchParams.get('customer_email')
+
+            console.log('Payment success - Session ID:', sessionId)
+            console.log('Payment success - Customer Email:', customerEmail)
 
             // Update or insert user plan to paid
             const { error: updateError } = await supabase
@@ -51,6 +63,7 @@ export default function PaymentSuccessPage() {
               console.error('Error updating user plan:', updateError)
               setError('Failed to update your plan. Please contact support.')
             } else {
+              console.log('Successfully updated user plan to paid')
               setSuccess(true)
             }
           } catch (err) {
@@ -62,6 +75,7 @@ export default function PaymentSuccessPage() {
           return
         }
         
+        console.log('No user found, redirecting to login')
         setError('User not authenticated. Please log in to complete your payment.')
         setLoading(false)
         // Redirect to login after a short delay
@@ -71,10 +85,15 @@ export default function PaymentSuccessPage() {
         return
       }
 
+      console.log('User authenticated:', user.email)
+
       try {
         // Get parameters from URL
         const sessionId = searchParams.get('session_id')
         const customerEmail = searchParams.get('customer_email')
+
+        console.log('Payment success - Session ID:', sessionId)
+        console.log('Payment success - Customer Email:', customerEmail)
 
         // Update or insert user plan to paid
         const { error: updateError } = await supabase
@@ -90,6 +109,7 @@ export default function PaymentSuccessPage() {
           console.error('Error updating user plan:', updateError)
           setError('Failed to update your plan. Please contact support.')
         } else {
+          console.log('Successfully updated user plan to paid')
           setSuccess(true)
         }
       } catch (err) {
