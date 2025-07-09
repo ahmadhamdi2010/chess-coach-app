@@ -12,7 +12,7 @@ export default function SupportPage() {
         </CardHeader>
         <CardContent>
           <p className="mb-4">If you have any questions, feedback, or need assistance, please contact us at <a href="mailto:support@chesscoach.com" className="text-blue-600 underline">support@chesscoach.com</a>.</p>
-          <p>We're here to help you get the most out of ChessCoach!</p>
+          <p>We&apos;re here to help you get the most out of ChessCoach!</p>
         </CardContent>
       </Card>
     </div>

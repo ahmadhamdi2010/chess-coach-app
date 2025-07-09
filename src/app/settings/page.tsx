@@ -137,7 +137,7 @@ export default function SettingsPage() {
                     <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-6 shadow-lg">
                       <DialogPrimitive.Title className="text-lg font-bold mb-2">Cancel Subscription</DialogPrimitive.Title>
                       <DialogPrimitive.Description className="mb-4 text-gray-600">
-                        Please let us know why you're cancelling. Your feedback helps us improve.
+                        Please let us know why you&apos;re cancelling. Your feedback helps us improve.
                       </DialogPrimitive.Description>
                       <form
                         onSubmit={e => {

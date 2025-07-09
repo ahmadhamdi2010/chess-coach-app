@@ -86,7 +86,7 @@ export default function PuzzlePage() {
   }
 
   // Handle puzzle completion
-  const handlePuzzleComplete = (_puzzleId: string, _success: boolean) => {
+  const handlePuzzleComplete = () => {
     // Removed automatic AI response
   }
 

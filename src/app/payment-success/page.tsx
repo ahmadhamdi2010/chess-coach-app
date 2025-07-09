@@ -25,7 +25,7 @@ export default function PaymentSuccessPage() {
 
       if (!user) {
         // Try to get session directly from Supabase as fallback
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user) {
           // Use the session user instead
@@ -34,7 +34,7 @@ export default function PaymentSuccessPage() {
           try {
             // Get parameters from URL
             const sessionId = searchParams.get('session_id')
-            const customerEmail = searchParams.get('customer_email')
+            // const customerEmail = searchParams.get('customer_email')
 
             // Update or insert user plan to paid
             const { error: updateError } = await supabase
@@ -73,7 +73,7 @@ export default function PaymentSuccessPage() {
       try {
         // Get parameters from URL
         const sessionId = searchParams.get('session_id')
-        const customerEmail = searchParams.get('customer_email')
+        // const customerEmail = searchParams.get('customer_email')
 
         // Update or insert user plan to paid
         const { error: updateError } = await supabase
@@ -100,7 +100,7 @@ export default function PaymentSuccessPage() {
     }
 
     handlePaymentSuccess()
-  }, [user, searchParams, authLoading])
+  }, [user, searchParams, authLoading, router])
 
   if (loading || authLoading) {
     return (
@@ -160,7 +160,7 @@ export default function PaymentSuccessPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-medium text-green-800 mb-2">What's included:</h3>
+            <h3 className="font-medium text-green-800 mb-2">What&apos;s included:</h3>
             <ul className="text-sm text-green-700 space-y-1">
               <li>• 200 credits for AI coaching</li>
               <li>• Full access to statistics page</li>

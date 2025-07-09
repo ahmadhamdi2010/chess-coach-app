@@ -256,7 +256,7 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome back, {userPlan.first_name || user.email?.split('@')[0]}!
               </h1>
-                              <p className="text-gray-600 mt-1">Your account&apos;s dashboard and overview</p>
+              <p className="text-gray-600 mt-1">Your account&apos;s dashboard and overview</p>
             </>
           ) : (
             <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-2" />
