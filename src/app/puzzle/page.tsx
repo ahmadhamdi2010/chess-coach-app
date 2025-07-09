@@ -62,7 +62,7 @@ export default function PuzzlePage() {
           }
         }
         fen = chess.fen();
-      } catch (e) {
+      } catch {
         fen = '';
       }
       setDailyPuzzle({
@@ -86,7 +86,7 @@ export default function PuzzlePage() {
   }
 
   // Handle puzzle completion
-  const handlePuzzleComplete = (puzzleId: string, success: boolean) => {
+  const handlePuzzleComplete = (_puzzleId: string, _success: boolean) => {
     // Removed automatic AI response
   }
 
@@ -170,13 +170,7 @@ export default function PuzzlePage() {
     }
   };
 
-  // Handle Enter key press
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
+
 
   if (loading) {
     return (
