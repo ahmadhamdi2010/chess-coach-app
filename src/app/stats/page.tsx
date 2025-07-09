@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
-import { Trophy, Clock, TrendingUp, Target } from 'lucide-react'
+import { TrendingUp, Target } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { BarChart, Bar, CartesianGrid, XAxis, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 
@@ -14,8 +14,8 @@ export default function StatsPage() {
   const router = useRouter()
   const [solvedCount, setSolvedCount] = useState<number | null>(null)
   const [totalAttempts, setTotalAttempts] = useState<number | null>(null)
-  const [chartData, setChartData] = useState<any[]>([])
-  const [categoryChartData, setCategoryChartData] = useState<any[]>([])
+  const [chartData, setChartData] = useState<unknown[]>([])
+  const [categoryChartData, setCategoryChartData] = useState<unknown[]>([])
   const [userPlan, setUserPlan] = useState<string | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
   // Date range state

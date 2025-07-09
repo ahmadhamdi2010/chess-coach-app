@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import TopNav from '@/components/navigation/TopNav'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { User, Mail, Trophy } from 'lucide-react'
+import { User, Trophy } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function ProfilePage() {

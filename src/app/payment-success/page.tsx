@@ -14,7 +14,6 @@ export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,7 +50,7 @@ export default function PaymentSuccessPage() {
               console.error('Error updating user plan:', updateError)
               setError('Failed to update your plan. Please contact support.')
             } else {
-              setSuccess(true)
+              // setSuccess(true) // This line is removed
             }
           } catch (err) {
             console.error('Payment success handling error:', err)
@@ -90,7 +89,7 @@ export default function PaymentSuccessPage() {
           console.error('Error updating user plan:', updateError)
           setError('Failed to update your plan. Please contact support.')
         } else {
-          setSuccess(true)
+          // setSuccess(true) // This line is removed
         }
       } catch (err) {
         console.error('Payment success handling error:', err)

@@ -6,10 +6,6 @@ import { Chessboard } from 'react-chessboard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { 
-  RotateCcw, 
-  SkipForward, 
-  ChevronLeft, 
-  ChevronRight, 
   History,
   Target,
   CheckCircle,
@@ -208,28 +204,6 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
     }
   }, [fetchRandomPuzzle])
 
-  // Get full PGN of the puzzle
-  const getPuzzlePgn = useCallback(() => {
-    if (!puzzles[currentPuzzleIndex]) return ''
-    
-    try {
-      const chess = new Chess(puzzles[currentPuzzleIndex].fen)
-      const moves = puzzles[currentPuzzleIndex].moves
-      
-      // Play all the solution moves
-      for (const moveString of moves) {
-        const from = moveString.slice(0, 2)
-        const to = moveString.slice(2, 4)
-        chess.move({ from, to, promotion: 'q' })
-      }
-      
-      return chess.pgn()
-    } catch (err) {
-      console.warn('Failed to generate puzzle PGN:', err)
-      return ''
-    }
-  }, [puzzles, currentPuzzleIndex])
-
   // Convert move string to PGN notation
   const moveToPgn = useCallback((moveString: string, gameInstance: Chess) => {
     try {
@@ -427,12 +401,6 @@ export default function ChessPuzzle({ onMoveComplete, onPuzzleComplete, onPuzzle
         loadPuzzle(updatedPuzzles.length - 1, updatedPuzzles)
       }
       setIsLoading(false)
-    }
-  }
-
-  const previousPuzzle = () => {
-    if (currentPuzzleIndex > 0) {
-      loadPuzzle(currentPuzzleIndex - 1)
     }
   }
 

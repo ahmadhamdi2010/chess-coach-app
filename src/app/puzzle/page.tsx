@@ -3,8 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import type { Puzzle } from '@/components/chess/ChessPuzzle'
 import TopNav from '@/components/navigation/TopNav'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Send } from 'lucide-react'
 import ChessPuzzle from '@/components/chess/ChessPuzzle'
@@ -22,7 +22,7 @@ export default function PuzzlePage() {
   const router = useRouter()
   const searchParams = useSearchParams();
   const isDaily = searchParams.get('daily') === '1';
-  const [dailyPuzzle, setDailyPuzzle] = useState<any>(null);
+  const [dailyPuzzle, setDailyPuzzle] = useState<Puzzle | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputMessage, setInputMessage] = useState('')
   const [currentPuzzleId, setCurrentPuzzleId] = useState<string | null>(null)

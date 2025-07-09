@@ -14,7 +14,6 @@ import SimpleCheckoutButton from '@/components/payment/SimpleCheckoutButton'
 export default function SettingsPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [profile, setProfile] = useState<{ first_name: string, last_name: string } | null>(null)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [saving, setSaving] = useState(false)
@@ -43,7 +42,6 @@ export default function SettingsPage() {
         .eq('id', user.id!)
         .single()
       if (!error && data) {
-        setProfile(data)
         setFirstName(data.first_name)
         setLastName(data.last_name)
       }
