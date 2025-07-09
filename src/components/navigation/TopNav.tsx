@@ -2,10 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
-import { Crown, LogOut, User, Settings, Target, BarChart3, ChevronDown, TrendingUp } from 'lucide-react'
+import { Crown, LogOut, User, Settings, Target, BarChart3, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,25 +23,6 @@ import {
 
 export default function TopNav() {
   const { user, signOut } = useAuth()
-  const [availableCredits, setAvailableCredits] = useState<number | null>(null)
-  const [userPlan, setUserPlan] = useState<string | null>(null)
-
-  // Fetch user's available credits and plan
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!user) return;
-      const { data, error } = await supabase
-        .from('credits')
-        .select('available_credits, plan')
-        .eq('id', user.id)
-        .single()
-      if (!error && data) {
-        setAvailableCredits(data.available_credits)
-        setUserPlan(data.plan)
-      }
-    }
-    fetchUserData()
-  }, [user])
 
   const handleSignOut = async () => {
     await signOut()
@@ -72,19 +51,11 @@ export default function TopNav() {
                   </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link href="/puzzle" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-gray-100/50 data-[state=open]:bg-gray-100/50">
+                  <Link href="/training" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-gray-100/50 data-[state=open]:bg-gray-100/50">
                     <Target className="mr-2 h-4 w-4" />
                     Training
                   </Link>
                 </NavigationMenuItem>
-                {userPlan === 'paid' && (
-                  <NavigationMenuItem>
-                    <Link href="/stats" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-gray-100/50 data-[state=open]:bg-gray-100/50">
-                      <TrendingUp className="mr-2 h-4 w-4" />
-                      Stats
-                    </Link>
-                  </NavigationMenuItem>
-                )}
               </NavigationMenuList>
             </NavigationMenu>
           </div>
@@ -94,9 +65,7 @@ export default function TopNav() {
             {/* Credits Display */}
             <div className="hidden sm:flex items-center space-x-2 bg-purple-50 px-3 py-2 rounded-lg">
               <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-sm font-medium text-purple-700">
-                {availableCredits !== null ? `${availableCredits} Credits` : '...'}
-              </span>
+              <span className="text-sm font-medium text-purple-700">125 Credits</span>
             </div>
 
             {/* User Dropdown */}
