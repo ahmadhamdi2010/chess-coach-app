@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowRight, Crown } from 'lucide-react'
 import Link from 'next/link'
-
+//done and safe to deploy 
 export default function Home() {
   const { user, loading } = useAuth()
   const router = useRouter()
